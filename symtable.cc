@@ -1,4 +1,6 @@
-SymbolTable::SymbolTable(){}
+SymbolTable::SymbolTable(){
+    SymbolTable::push();
+}
 
 //push in a new scope
 void SymbolTable::push(){
@@ -29,6 +31,12 @@ Symbol* SymbolTable::find(const char *name){
     return NULL;
 }
 
+Symbol* SymbolTable::findInCurrScope(const char *name){
+    if (!SymbolTable::tables.empty()){
+        return SymbolTable::tables.back().find(name);
+    }
+    return NULL;
+}
 
 
 
@@ -48,6 +56,16 @@ Symbol* ScopedTable::find(const char *name){
     it = ScopedTable::symbols.find(name);
     if (it != ScopedTable::symbols.end())
         return &(it->second);
-    else:
-        return NULL;
+    return NULL;
+}
+
+
+
+
+bool MyStack::insideLoop(){
+
+}
+
+bool MyStack::insideSwitch(){
+
 }

@@ -25,26 +25,26 @@ class Stmt;
 
 void yyerror(const char *msg);
 
-class Decl : public Node 
+class Decl : public Node
 {
   protected:
     Identifier *id;
-  
+
   public:
     Decl() : id(NULL) {}
     Decl(Identifier *name);
     Identifier *GetIdentifier() const { return id; }
     friend ostream& operator<<(ostream& out, Decl *d) { return out << d->id; }
-
+    virtual void Check();
 };
 
-class VarDecl : public Decl 
+class VarDecl : public Decl
 {
   protected:
     Type *type;
     TypeQualifier *typeq;
     Expr *assignTo;
-    
+
   public:
     VarDecl() : type(NULL), typeq(NULL), assignTo(NULL) {}
     VarDecl(Identifier *name, Type *type, Expr *assignTo = NULL);
@@ -62,14 +62,14 @@ class VarDeclError : public VarDecl
     const char *GetPrintNameForNode() { return "VarDeclError"; }
 };
 
-class FnDecl : public Decl 
+class FnDecl : public Decl
 {
   protected:
     List<VarDecl*> *formals;
     Type *returnType;
     TypeQualifier *returnTypeq;
     Stmt *body;
-    
+
   public:
     FnDecl() : Decl(), formals(NULL), returnType(NULL), returnTypeq(NULL), body(NULL) {}
     FnDecl(Identifier *name, Type *returnType, List<VarDecl*> *formals);
