@@ -13,11 +13,12 @@ void SymbolTable::pop(){
 
 void SymbolTable::insert(Symbol &sym){
     //calls insert of Scope table
-    SymbolTable::tables.back().insert(sym);
+    if(!SymbolTable::tables.empty())
+    	SymbolTable::tables.back().insert(sym);
 }
 
 void SymbolTable::remove(Symbol &sym){
-    if (!SymbolTable::tables.empty())
+    if (!SymbolTable::tables.empty() && !SymbolTable::tables.back()->symbols.empty())
         SymbolTable::tables.back().remove(sym);
 }
 
