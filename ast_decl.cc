@@ -15,17 +15,20 @@ Decl::Decl(Identifier *n) : Node(*n->GetLocation()) {
 void VarDecl::Check(){
     char * name = Decl::GetIdentifier()->GetName();
     Symbol *symres = Node::symtable->findInCurrScope(name);
-    if (symres == NULL){
-        Symbol newsym = {name,this,EntryKind::E_VarDecl};
-        Node::symtable->insert(newsym);
-    }else{
+    Symbol newsym = {name,this,EntryKind::E_VarDecl};
+    if (symres != NULL){
         Decl *prevDecl = symres->decl;
         ReportError::DeclConflict(this,prevDecl);
     }
+    Node::symtable->insert(newsym);
 
-    if (VarDecl::assignTo != NULL){
-        VarDecl::assignTo->Check(); //check right hand expr
-        if (VarDecl::GetType() != VarDecl::assignTo)
+    if (assignTo != NULL){
+        assignTo->Check(); //check right hand expr
+        Type *rhs_type = assignTo->GetType();
+        if (!rhs_type->IsConvertibleTo(GetType())){
+            ReportError::InvalidInitialization(this->id,this->type,rhs_type);
+        }
+
     }
 }
 
@@ -82,4 +85,21 @@ void FnDecl::PrintChildren(int indentLevel) {
     if (id) id->Print(indentLevel+1);
     if (formals) formals->PrintAll(indentLevel+1, "(formals) ");
     if (body) body->Print(indentLevel+1, "(body) ");
+}
+
+void FnDecl::Check(){
+    //create new scope
+    char *name = Decl::GetIdentifier()->GetName();
+    Symbol * symres = Node::symtable->findInCurrScope(name);
+    if (symres == NULL){
+
+    }else{
+
+    }
+    Node::symtable->push();
+
+
+    if (this->body != NULL){
+        this->body->Check();
+    }
 }

@@ -45,7 +45,11 @@ Symbol* SymbolTable::findInCurrScope(const char *name){
 ScopedTable::ScopedTable(){}
 
 void ScopedTable::insert(Symbol &sym){
-    ScopedTable::symbols.insert(std::pair<char *,Symbol,lessStr>(sym.name,sym));
+    std::pair<std::map<char *,Symbol,lessStr>::iterator,bool> p;
+    p = ScopedTable::symbols.insert(std::pair<char *,Symbol,lessStr>(sym.name,sym));
+    if (p.second == false){
+        p.first->second = sym;
+    }
 }
 
 void ScopedTable::remove(Symbol &sym){
