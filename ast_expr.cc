@@ -12,21 +12,21 @@
 IntConstant::IntConstant(yyltype loc, int val) : Expr(loc) {
     value = val;
 }
-void IntConstant::PrintChildren(int indentLevel) { 
+void IntConstant::PrintChildren(int indentLevel) {
     printf("%d", value);
 }
 
 FloatConstant::FloatConstant(yyltype loc, double val) : Expr(loc) {
     value = val;
 }
-void FloatConstant::PrintChildren(int indentLevel) { 
+void FloatConstant::PrintChildren(int indentLevel) {
     printf("%g", value);
 }
 
 BoolConstant::BoolConstant(yyltype loc, bool val) : Expr(loc) {
     value = val;
 }
-void BoolConstant::PrintChildren(int indentLevel) { 
+void BoolConstant::PrintChildren(int indentLevel) {
     printf("%s", value ? "true" : "false");
 }
 
@@ -37,6 +37,21 @@ VarExpr::VarExpr(yyltype loc, Identifier *ident) : Expr(loc) {
 
 void VarExpr::PrintChildren(int indentLevel) {
     id->Print(indentLevel+1);
+}
+
+void VarExpr::Check(){
+    char *name = this->GetIdentifier()->GetName();
+    Symbol * symres = Node::symtable->find(name);
+    if (symres == NULL){
+        ReportError::IdentifierNotDeclared(this->GetIdentifie(),reasonT::LookingForVariable);
+        this->type = Type::errorType;
+    }else{
+        VarDecl * vardecl = dynamic_cast<VarDecl*>(symres->decl)
+        if (vardecl){
+            this->type = vardecl->GetType();
+        }
+    }
+
 }
 
 Operator::Operator(yyltype loc, const char *tok) : Node(loc) {
@@ -52,23 +67,23 @@ bool Operator::IsOp(const char *op) const {
     return strcmp(tokenString, op) == 0;
 }
 
-CompoundExpr::CompoundExpr(Expr *l, Operator *o, Expr *r) 
+CompoundExpr::CompoundExpr(Expr *l, Operator *o, Expr *r)
   : Expr(Join(l->GetLocation(), r->GetLocation())) {
     Assert(l != NULL && o != NULL && r != NULL);
     (op=o)->SetParent(this);
-    (left=l)->SetParent(this); 
+    (left=l)->SetParent(this);
     (right=r)->SetParent(this);
 }
 
-CompoundExpr::CompoundExpr(Operator *o, Expr *r) 
+CompoundExpr::CompoundExpr(Operator *o, Expr *r)
   : Expr(Join(o->GetLocation(), r->GetLocation())) {
     Assert(o != NULL && r != NULL);
-    left = NULL; 
+    left = NULL;
     (op=o)->SetParent(this);
     (right=r)->SetParent(this);
 }
 
-CompoundExpr::CompoundExpr(Expr *l, Operator *o) 
+CompoundExpr::CompoundExpr(Expr *l, Operator *o)
   : Expr(Join(l->GetLocation(), o->GetLocation())) {
     Assert(l != NULL && o != NULL);
     (left=l)->SetParent(this);
@@ -80,7 +95,7 @@ void CompoundExpr::PrintChildren(int indentLevel) {
    op->Print(indentLevel+1);
    if (right) right->Print(indentLevel+1);
 }
-   
+
 ConditionalExpr::ConditionalExpr(Expr *c, Expr *t, Expr *f)
   : Expr(Join(c->GetLocation(), f->GetLocation())) {
     Assert(c != NULL && t != NULL && f != NULL);
@@ -94,8 +109,46 @@ void ConditionalExpr::PrintChildren(int indentLevel) {
     trueExpr->Print(indentLevel+1, "(true) ");
     falseExpr->Print(indentLevel+1, "(false) ");
 }
+
+void ArithmeticExpr::Check(){
+    Type * ltype = NULL;
+    Type * rtype = NULL;
+    if (this->left){
+        this->left->Check();
+        this->right->Check();
+        ltype = this->left->GetType();
+        rtype =  this->right->GetType();
+
+        if (!ltype->IsConvertibleTo(rtype) && !rtype->IsConvertibleTo(ltype)){
+            ReportError::IncompatibleOperands(this->op,ltype,rtype);
+            this->type = Type::errorType;
+        }else if (ltype->IsError() || rtype->IsError()){
+            this->type = Type::errorType;
+        }else{
+            this->type = ltype;
+        }
+    }else{
+        //ltype is NULL
+        this->right->Check();
+        rtype = this->right->GetType();
+
+    }
+}
+
+void RelationalExpr::Check(){
+
+}
+
+void EqualityExpr::Check(){
+
+}
+
+void LogicalExpr::Check(){
+
+}
+
 ArrayAccess::ArrayAccess(yyltype loc, Expr *b, Expr *s) : LValue(loc) {
-    (base=b)->SetParent(this); 
+    (base=b)->SetParent(this);
     (subscript=s)->SetParent(this);
 }
 
@@ -103,12 +156,12 @@ void ArrayAccess::PrintChildren(int indentLevel) {
     base->Print(indentLevel+1);
     subscript->Print(indentLevel+1, "(subscript) ");
 }
-     
-FieldAccess::FieldAccess(Expr *b, Identifier *f) 
+
+FieldAccess::FieldAccess(Expr *b, Identifier *f)
   : LValue(b? Join(b->GetLocation(), f->GetLocation()) : *f->GetLocation()) {
     Assert(f != NULL); // b can be be NULL (just means no explicit base)
-    base = b; 
-    if (base) base->SetParent(this); 
+    base = b;
+    if (base) base->SetParent(this);
     (field=f)->SetParent(this);
 }
 
@@ -131,4 +184,3 @@ void Call::PrintChildren(int indentLevel) {
    if (field) field->Print(indentLevel+1);
    if (actuals) actuals->PrintAll(indentLevel+1, "(actuals) ");
 }
-

@@ -88,15 +88,22 @@ void FnDecl::PrintChildren(int indentLevel) {
 }
 
 void FnDecl::Check(){
-    //create new scope
     char *name = Decl::GetIdentifier()->GetName();
     Symbol * symres = Node::symtable->findInCurrScope(name);
-    if (symres == NULL){
-
-    }else{
-
+    if (symres != NULL){
+        Decl *prevDecl = symres->decl;
+        ReportError::DeclConflict(this,prevDecl);
     }
+    Node::symtable->insert(newsym);
+
+    //create new scope
     Node::symtable->push();
+
+    if (formals != NULL){
+        for(int i = 0; i < formals->NumElements(); i++){
+            formals->Nth(i)->Check(); //check every parameter            
+        }
+    }
 
 
     if (this->body != NULL){
