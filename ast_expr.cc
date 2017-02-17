@@ -9,6 +9,10 @@
 #include "ast_decl.h"
 #include "symtable.h"
 
+Type * Expr::GetType(){
+    return type;
+}
+
 IntConstant::IntConstant(yyltype loc, int val) : Expr(loc) {
     value = val;
 }
@@ -113,39 +117,91 @@ void ConditionalExpr::PrintChildren(int indentLevel) {
 void ArithmeticExpr::Check(){
     Type * ltype = NULL;
     Type * rtype = NULL;
+
+    this->right->Check();
+    rtype =  this->right->GetType();
+
+    const char * And = "&&";
+    const char * Or = "||";
+
     if (this->left){
+        //if left expr * is not NULL
         this->left->Check();
-        this->right->Check();
         ltype = this->left->GetType();
-        rtype =  this->right->GetType();
 
         if (!ltype->IsConvertibleTo(rtype) && !rtype->IsConvertibleTo(ltype)){
             ReportError::IncompatibleOperands(this->op,ltype,rtype);
             this->type = Type::errorType;
         }else if (ltype->IsError() || rtype->IsError()){
             this->type = Type::errorType;
+        }else if (this->op->IsOp(And) || this->op->IsOp(Or)){
+            //checking whether the operator is logical
+            if(!ltype->isBool() || !rtype->isBool()){
+                ReportError::IncompatibleOperands(this->op,ltype,rtype);
+                this->type = Type::errorType;
+            }else{
+                this->type = Type::BoolConstant;
+            }
+        }else if (!(ltype->IsNumeric() || ltype->IsVector() || ltype->IsMatrix())){
+            ReportError::IncompatibleOperands(this->op,ltype,rtype);
+            this->type = Type::errorType;
         }else{
             this->type = ltype;
         }
     }else{
-        //ltype is NULL
-        this->right->Check();
-        rtype = this->right->GetType();
-
+        //if left expr * is NULL, prefix
+        if (rtype->IsError()){
+            this->type = Type::errorType;
+        }else if (!(rtype->IsNumeric() || rtype->IsVector() || rtype->IsMatrix())){
+            ReportError::IncompatibleOperand(this->op,rtype);
+            this->type = Type::errorType;
+        }else{
+            this->type = rtype;
+        }
     }
 }
 
 void RelationalExpr::Check(){
+    this->left->Check();
+    this->right->Check();
 
+    Type * ltype = this->left->GetType();
+    Type * rtype = this->right->GetType();
+
+    if (!(ltype->IsConvertibleTo(rtype) || rtype->IsConvertibleTo(ltype))){
+        ReportError::IncompatibleOperands(this->op,ltype,rtype);
+        this->type = Type::errorType;
+    }else if (!ltype->IsNumeric() || !rtype->IsNumeric()){
+        ReportError::IncompatibleOperands(this->op,ltype,rtype);
+        this->type = Type::errorType;
+    }else if (ltype->IsError() || rtype->IsError()){
+        this->type = Type::errorType;
+    }else{
+        this->type = Type::BoolConstant;
+    }
 }
 
 void EqualityExpr::Check(){
+    this->left->Check();
+    this->right->Check();
 
+    Type * ltype = this->left->GetType();
+    Type * rtype = this->right->GetType();
+
+    if (!(ltype->IsConvertibleTo(rtype) || rtype->IsConvertibleTo(ltype))){
+        ReportError::IncompatibleOperands(this->op,ltype,rtype);
+        this->type = Type::errorType;
+    }else if (ltype->IsError() || rtype->IsError()){
+        this->type = Type::errorType;
+    }else{
+        this->type = Type::BoolConstant;
+    }
 }
 
-void LogicalExpr::Check(){
-
+/*void LogicalExpr::Check(){
+    //add logical expr check in arithmetic check
 }
+*/
 
 ArrayAccess::ArrayAccess(yyltype loc, Expr *b, Expr *s) : LValue(loc) {
     (base=b)->SetParent(this);
@@ -155,6 +211,10 @@ ArrayAccess::ArrayAccess(yyltype loc, Expr *b, Expr *s) : LValue(loc) {
 void ArrayAccess::PrintChildren(int indentLevel) {
     base->Print(indentLevel+1);
     subscript->Print(indentLevel+1, "(subscript) ");
+}
+
+void ArrayAccess::Check(){
+
 }
 
 FieldAccess::FieldAccess(Expr *b, Identifier *f)

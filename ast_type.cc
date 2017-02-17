@@ -79,6 +79,10 @@ bool Type::IsMatrix() {
 bool Type::IsError() { 
     return this->IsEquivalentTo(Type::errorType);
 }
+
+bool Type::IsBool() {
+    return this->IsEquivalentTo(Type::boolType);
+}
 	
 NamedType::NamedType(Identifier *i) : Type(*i->GetLocation()) {
     Assert(i != NULL);
