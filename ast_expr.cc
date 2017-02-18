@@ -206,6 +206,43 @@ void EqualityExpr::Check(){
 }
 */
 
+void AssignExpr::Check(){
+    this->left->Check();
+    this->right->Check();
+
+    Type * ltype = this->left->GetType();
+    Type * rtype = this->right->GetType();
+
+    if (!ltype->IsConvertibleTo(rtype) && !rtype->IsConvertibleTo(ltype)){
+        ReportError::IncompatibleOperands(this->op,ltype,rtype);
+        this->type = Type::errorType;
+    }else if (ltype->IsError() || rtype->IsError()){
+        this->type = Type::errorType;
+    }else if (!(ltype->IsNumeric() || ltype->IsVector() || ltype->IsMatrix())){
+        ReportError::IncompatibleOperands(this->op,ltype,rtype);
+        this->type = Type::errorType;
+    }else{
+        this->type = ltype;
+    }
+}
+
+void PostfixExpr::Check(){
+    this->left->Check();
+    Type * ltype = this->left->GetType();
+    if (ltype->IsError()){
+        this->type = Type::errorType;
+    }else if (!(ltype->IsNumeric() || ltype->IsVector() || ltype->IsMatrix())){
+        ReportError::IncompatibleOperand(this->op,ltype);
+        this->type = Type::errorType;
+    }else{
+        this->type = ltype;
+    }
+}
+
+void ConditionalExpr::Check(){
+    
+}
+
 ArrayAccess::ArrayAccess(yyltype loc, Expr *b, Expr *s) : LValue(loc) {
     (base=b)->SetParent(this);
     (subscript=s)->SetParent(this);
@@ -220,12 +257,25 @@ void ArrayAccess::Check(){
     this->base->Check();
     Type * baseType = this->base->GetType();
     ArrayType * arrayType = dynamic_cast<ArrayType *>(baseType);
-    if(arrayType == NULL){
+    if (baseType->IsMatrix()){
+        //for matrix access, where a mat3 access has to return a vec3
+        if(baseType->IsEquivalentTo(Type::mat2Type)){
+            this->type = Type::vec2Type;
+        }else if(baseType->IsEquivalentTo(Type::mat3Type)){
+            this->type = Type::vec3Type;
+        }else{
+            this->type = Type::vec4Type;
+        }
+    }else if(arrayType == NULL){
+        //if it is not matrix nor an array, report error
         VarExpr * varExpr = dynamic_cast<VarExpr *>(this->base);
+        //a line of segmentation: if base is not a varExpr then core dump
+        //so add a safe check
         if(VarExpr)
             ReportError::NotAnArray(varExpr->GetIdentifier());
         this->type = Type::errorType;
-    }else{
+    }
+    else{
         this->type = arrayType->GetElemType();
     }
 }
@@ -242,6 +292,10 @@ FieldAccess::FieldAccess(Expr *b, Identifier *f)
 void FieldAccess::PrintChildren(int indentLevel) {
     if (base) base->Print(indentLevel+1);
     field->Print(indentLevel+1);
+}
+
+void FieldAccess::Check(){
+
 }
 
 Call::Call(yyltype loc, Expr *b, Identifier *f, List<Expr*> *a) : Expr(loc)  {
