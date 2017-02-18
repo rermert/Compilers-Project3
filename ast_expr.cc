@@ -47,12 +47,15 @@ void VarExpr::Check(){
     char *name = this->GetIdentifier()->GetName();
     Symbol * symres = Node::symtable->find(name);
     if (symres == NULL){
-        ReportError::IdentifierNotDeclared(this->GetIdentifie(),reasonT::LookingForVariable);
+        ReportError::IdentifierNotDeclared(this->GetIdentifier(),reasonT::LookingForVariable);
         this->type = Type::errorType;
     }else{
         VarDecl * vardecl = dynamic_cast<VarDecl*>(symres->decl)
         if (vardecl){
             this->type = vardecl->GetType();
+        }else{
+            //the case where the declared variable is not vardecl
+            this->type = Type::errorType;
         }
     }
 
@@ -214,7 +217,17 @@ void ArrayAccess::PrintChildren(int indentLevel) {
 }
 
 void ArrayAccess::Check(){
-
+    this->base->Check();
+    Type * baseType = this->base->GetType();
+    ArrayType * arrayType = dynamic_cast<ArrayType *>(baseType);
+    if(arrayType == NULL){
+        VarExpr * varExpr = dynamic_cast<VarExpr *>(this->base);
+        if(VarExpr)
+            ReportError::NotAnArray(varExpr->GetIdentifier());
+        this->type = Type::errorType;
+    }else{
+        this->type = arrayType->GetElemType();
+    }
 }
 
 FieldAccess::FieldAccess(Expr *b, Identifier *f)

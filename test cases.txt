@@ -1,0 +1,5 @@
+test cases
+1. variable identifier & function identifier using same name
+2. using a function name as a variable later without parenthesis
+3. array access something that is not declared as an array(declared as a function)
+
