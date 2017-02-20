@@ -124,8 +124,10 @@ void ArithmeticExpr::Check(){
     this->right->Check();
     rtype =  this->right->GetType();
 
-    const char * And = "&&";
-    const char * Or = "||";
+    char AndArr[] = "&&";
+    char OrArr[] = "||";
+    const char * And = AndArr;
+    const char * Or = OrArr;
 
     if (this->left){
         //if left expr * is not NULL
@@ -240,7 +242,8 @@ void PostfixExpr::Check(){
 }
 
 void ConditionalExpr::Check(){
-    
+    //Tutor says conditional expr won't be tested??
+    this->type = Type::errorType;
 }
 
 ArrayAccess::ArrayAccess(yyltype loc, Expr *b, Expr *s) : LValue(loc) {
@@ -256,6 +259,12 @@ void ArrayAccess::PrintChildren(int indentLevel) {
 void ArrayAccess::Check(){
     this->base->Check();
     Type * baseType = this->base->GetType();
+
+    if(baseType->IsError()){
+        this->type = Type::errorType;
+        return;
+    }
+
     ArrayType * arrayType = dynamic_cast<ArrayType *>(baseType);
     if (baseType->IsMatrix()){
         //for matrix access, where a mat3 access has to return a vec3
@@ -295,7 +304,61 @@ void FieldAccess::PrintChildren(int indentLevel) {
 }
 
 void FieldAccess::Check(){
+    this->base->Check();
+    Type * baseType = this->base->GetType();
 
+    if(baseType->IsError()){
+        this->type = Type::errorType;
+        return;
+    }
+
+    if(!baseType->IsVector()){
+        ReportError::InaccessibleSwizzle(this->field,this->baseType);
+        this->type = Type::errorType;
+        return;
+    }
+
+    Type * typeArr[] = {Type::vec2Type, Type::vec3Type, Type::vec4Type};
+    char * fieldName = field->GetName();
+    std::string fieldStr(fieldName);
+    for(int i = 0; i < 3; i++){
+        if(baseType->IsEquivalentTo(typeArr[i])){
+            for(unsigned int i = 0; i<fieldName.length(); i++){
+                if(fieldName[i] != 'x' || fieldName[i] != 'y' || fieldName[i] != 'z' || fieldName[i] != 'w'){
+                    ReportError::InvalidSwizzle(this->field, this->base);
+                    this->type = errorType;
+                    return;
+                }
+                //case for vec2Type swizzle out of bound
+                if((fieldName[i] == 'w' || fieldName[i] == 'z') && i == 0){
+                    ReportError::SwizzleOutOfBound(this->field, this->base);
+                    this->type = Type::errorType;
+                    return;
+                }
+                //for vec3type swizzle out of bound
+                if(fieldName[i] == 'w' && i == 1){
+                    ReportError::SwizzleOutOfBound(this->field, this->base);
+                    this->type = Type::errorType;
+                    return;
+                }
+            }
+        }
+    }
+    if(fieldName.length() > 4){
+        ReportError::OversizedVector(this->field, this->base);
+        this->type = Type::errorType;
+        return;
+    }
+
+    if(fieldName.length() == 1){
+        this->type = Type::floatType;
+    }else if(fieldName.length() == 2){
+        this->type = Type::vec2Type;
+    }else if(fieldName.length() == 3){
+        this->type = Type::vec3Type;
+    }else{
+        this->type = Type::vec4Type;
+    }
 }
 
 Call::Call(yyltype loc, Expr *b, Identifier *f, List<Expr*> *a) : Expr(loc)  {
@@ -310,4 +373,50 @@ void Call::PrintChildren(int indentLevel) {
    if (base) base->Print(indentLevel+1);
    if (field) field->Print(indentLevel+1);
    if (actuals) actuals->PrintAll(indentLevel+1, "(actuals) ");
+}
+
+void Call::Check(){
+    Symbol * funcSym = Node::symtable->find(field->GetName());
+    //if we cannot find that identifier in symbol table
+    if(funcSym == NULL){
+        ReportError::IdentifierNotDeclared(this->field, reasonT::LookingForFunction);
+        this->type = Type::errorType;
+        return;
+    }
+
+    FnDecl * fnDecl = dynamic_cast<FnDecl *> funcSym->decl;
+    //not sure we can directly do assertion like this or not
+    //if found in symbol table, but is not declared as a function
+    if(funcSym->kind == EntryKind::E_VarDecl || fnDecl == NULL){
+        ReportError::NotAFunction(this->field);
+        this->type = Type::errorType;
+        return;
+    }
+
+    //get the formals declared
+    List<VarDecl*> * expectedFormals = fnDecl->GetFormals();
+    int expectNum = expectedFormals->size();
+    int actualNum = this->actuals->size();
+    if(actualNum < expectNum){
+        ReportError::LessFormals(this->field, expectNum, actualNum);
+        this->type = Type::errorType;
+        return;
+    }else if(actualNum > expectNum){
+        ReportError::ExtraFormals(this->field, expectNum, actualNum);
+        this->type = Type::errorType;
+        return;
+    }
+    //for each formal check the expected varDecl type is equivalent to expr type
+    for(int i = 0; i < expectNum; i++){
+        VarDecl * expDecl = expectedFormals->Nth(i);
+        Expr * actualExpr = this->actuals->Nth(i);
+        actualExpr->Check();//we are sure this works!
+        Type * actualType = actualExpr->GetType();
+        if(!actualType->IsEquivalentTo(expDecl->GetType())){
+            ReportError::FormalsTypeMismatch(this->field, i, expDecl->GetType(), actualType);
+            this->type = Type::errorType;
+            return;
+        }
+    }
+    this->type = fnDecl->GetType();
 }
