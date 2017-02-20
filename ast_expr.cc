@@ -376,7 +376,11 @@ void Call::PrintChildren(int indentLevel) {
 }
 
 void Call::Check(){
-    Symbol * funcSym = Node::symtable->find(field->GetName());
+    if(this->field == NULL){
+        this->type = Type::errorType;
+        return;
+    }
+    Symbol * funcSym = Node::symtable->find(this->field->GetName());
     //if we cannot find that identifier in symbol table
     if(funcSym == NULL){
         ReportError::IdentifierNotDeclared(this->field, reasonT::LookingForFunction);
