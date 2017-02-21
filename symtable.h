@@ -81,6 +81,7 @@ class SymbolTable {
     static int loopNum;
     static int switchNum;
     static bool needReturn;
+    static bool hasReturn;
     static Type * needReturnType;
 };
 

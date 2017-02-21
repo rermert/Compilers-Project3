@@ -5,6 +5,7 @@
 int SymbolTable::loopNum = 0;
 int SymbolTable::swtichNum = 0;
 bool SymbolTable::needReturn = false;
+bool SymbolTable::hasReturn = false;
 Type * SymbolTable::needReturnType = NULL;
 
 SymbolTable::SymbolTable(){
