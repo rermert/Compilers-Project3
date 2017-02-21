@@ -223,7 +223,7 @@ void ReturnStmt::Check(){
         ReportError::ReturnMismatch(this, returnType, Type::voidType);
     }else{
         //case3: return something function requires something else
-        if(!returnType->IsEquivalentTo(Node::symtable->needReturnType)){
+        if(!returnType->IsEquivalentTo(Type::errorType) && !returnType->IsEquivalentTo(Node::symtable->needReturnType)){
             ReportError::ReturnMismatch(this, returnType, Node::symtable->needReturnType);
         }
     }

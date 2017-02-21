@@ -321,22 +321,22 @@ void FieldAccess::Check(){
     Type * typeArr[] = {Type::vec2Type, Type::vec3Type, Type::vec4Type};
     char * fieldName = field->GetName();
     std::string fieldStr(fieldName);
-    for(int i = 0; i < 3; i++){
-        if(baseType->IsEquivalentTo(typeArr[i])){
+    for(int j = 0; j < 3; j++){
+        if(baseType->IsEquivalentTo(typeArr[j])){
             for(unsigned int i = 0; i<fieldStr.length(); i++){
-                if(fieldName[i] != 'x' || fieldName[i] != 'y' || fieldName[i] != 'z' || fieldName[i] != 'w'){
+                if(fieldStr[i] != 'x' && fieldStr[i] != 'y' && fieldStr[i] != 'z' && fieldStr[i] != 'w'){
                     ReportError::InvalidSwizzle(this->field, this->base);
                     this->type = Type::errorType;
                     return;
                 }
                 //case for vec2Type swizzle out of bound
-                if((fieldName[i] == 'w' || fieldName[i] == 'z') && i == 0){
+                if((fieldStr[i] == 'w' || fieldStr[i] == 'z') && j == 0){
                     ReportError::SwizzleOutOfBound(this->field, this->base);
                     this->type = Type::errorType;
                     return;
                 }
                 //for vec3type swizzle out of bound
-                if(fieldName[i] == 'w' && i == 1){
+                if(fieldStr[i] == 'w' && j == 1){
                     ReportError::SwizzleOutOfBound(this->field, this->base);
                     this->type = Type::errorType;
                     return;

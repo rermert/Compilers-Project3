@@ -97,7 +97,7 @@ void FnDecl::Check(){
     }
     Node::symtable->insert(*newsym);
 
-    if(returnType != NULL || returnType->IsEquivalentTo(Type::voidType)){
+    if(/*returnType != NULL || */!returnType->IsEquivalentTo(Type::voidType)){
         Node::symtable->needReturn = true;
         Node::symtable->needReturnType = returnType;
     }
