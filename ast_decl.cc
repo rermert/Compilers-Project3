@@ -96,17 +96,31 @@ void FnDecl::Check(){
     }
     Node::symtable->insert(newsym);
 
+    if(returnType != NULL || returnType->IsEquivalentTo(Type::voidType)){
+        Node::symtable->needReturn = true;
+        Node::symtable->needReturnType = returnType;
+    }
+
     //create new scope
     Node::symtable->push();
 
     if (formals != NULL){
-        for(int i = 0; i < formals->NumElements(); i++){
+        int size = formals->NumElements();
+        for(int i = 0; i < size; i++){
             formals->Nth(i)->Check(); //check every parameter            
         }
     }
 
-
     if (this->body != NULL){
         this->body->Check();
     }
+
+    if(Node::symtable->hasReturn == false && Node::symtable->needReturn == true){
+        ReportError::ReturnMissing(this);
+    }
+    //reset everything after checking function
+    Node::symtable->needReturn = false;
+    Node::symtable->hasReturn = false;
+    Node::symtable->needReturnType = NULL;
+    Node::symtable->pop();
 }
