@@ -15,12 +15,12 @@ Decl::Decl(Identifier *n) : Node(*n->GetLocation()) {
 void VarDecl::Check(){
     char * name = Decl::GetIdentifier()->GetName();
     Symbol *symres = Node::symtable->findInCurrScope(name);
-    Symbol newsym = {name,this,EntryKind::E_VarDecl};
+    Symbol * newsym = new Symbol(name,this,E_VarDecl);
     if (symres != NULL){
         Decl *prevDecl = symres->decl;
         ReportError::DeclConflict(this,prevDecl);
     }
-    Node::symtable->insert(newsym);
+    Node::symtable->insert(*newsym);
 
     if (assignTo != NULL){
         assignTo->Check(); //check right hand expr
@@ -90,11 +90,12 @@ void FnDecl::PrintChildren(int indentLevel) {
 void FnDecl::Check(){
     char *name = Decl::GetIdentifier()->GetName();
     Symbol * symres = Node::symtable->findInCurrScope(name);
+    Symbol * newsym = new Symbol(name,this,E_FunctionDecl);
     if (symres != NULL){
         Decl *prevDecl = symres->decl;
         ReportError::DeclConflict(this,prevDecl);
     }
-    Node::symtable->insert(newsym);
+    Node::symtable->insert(*newsym);
 
     if(returnType != NULL || returnType->IsEquivalentTo(Type::voidType)){
         Node::symtable->needReturn = true;

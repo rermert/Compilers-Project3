@@ -131,9 +131,9 @@ void ForStmt::Check(){
     //should push a new scope for the following statement body block
     if(body){
         Node::symtable->push();
-        Node::loopNum++;
+        Node::symtable->loopNum++;
         body->Check();
-        Node::loopNum--;
+        Node::symtable->loopNum--;
         Node::symtable->pop();
     }
 }
@@ -143,7 +143,7 @@ void WhileStmt::PrintChildren(int indentLevel) {
     body->Print(indentLevel+1, "(body) ");
 }
 
-boid WhileStmt::Check(){
+void WhileStmt::Check(){
     if(test){
         test->Check();
         Type * testType = test->GetType();
@@ -154,9 +154,9 @@ boid WhileStmt::Check(){
     //should push a new scope for the following statement body block
     if(body){
         Node::symtable->push();
-        Node::loopNum++;
+        Node::symtable->loopNum++;
         body->Check();
-        Node::loopNum--;
+        Node::symtable->loopNum--;
         Node::symtable->pop();
     }
 }
@@ -213,7 +213,7 @@ void ReturnStmt::Check(){
 
     //case 1: return nothing but function requres something
     if(expr == NULL && Node::symtable->needReturn == true)
-        rReportError::ReturnMismatch(this, Type::voidType, Node::symtalbe->needReturnType);
+        ReportError::ReturnMismatch(this, Type::voidType, Node::symtable->needReturnType);
     
     expr->Check();
     Type * returnType = expr->GetType();
@@ -224,7 +224,7 @@ void ReturnStmt::Check(){
     }else{
         //case3: return something function requires something else
         if(!returnType->IsEquivalentTo(Node::symtable->needReturnType)){
-            ReportError::ReturnMismatch(this, returnType, Node::symtalbe->needReturnType);
+            ReportError::ReturnMismatch(this, returnType, Node::symtable->needReturnType);
         }
     }
 }

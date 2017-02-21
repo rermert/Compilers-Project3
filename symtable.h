@@ -50,9 +50,11 @@ struct lessStr {
 };
 
 typedef map<const char *, Symbol, lessStr>::iterator SymbolIterator;
+typedef map<const char *, Symbol, lessStr> SymMap;
 
 class ScopedTable {
-  map<const char *, Symbol, lessStr> symbols;
+  //map<const char *, Symbol, lessStr> symbols;
+  SymMap symbols;
 
   public:
     ScopedTable();

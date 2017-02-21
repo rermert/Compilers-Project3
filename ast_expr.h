@@ -73,7 +73,7 @@ class FloatConstant: public Expr
     FloatConstant(yyltype loc, double val);
     const char *GetPrintNameForNode() { return "FloatConstant"; }
     void PrintChildren(int indentLevel);
-    void Check() {this-type = Type::floatType;}
+    void Check() {this->type = Type::floatType;}
 };
 
 class BoolConstant : public Expr
@@ -85,7 +85,7 @@ class BoolConstant : public Expr
     BoolConstant(yyltype loc, bool val);
     const char *GetPrintNameForNode() { return "BoolConstant"; }
     void PrintChildren(int indentLevel);
-    void Check() {this-type = Type::boolType;}
+    void Check() {this->type = Type::boolType;}
 };
 
 class VarExpr : public Expr

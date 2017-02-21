@@ -3,7 +3,7 @@
 #include "ast_type.h"
 
 int SymbolTable::loopNum = 0;
-int SymbolTable::swtichNum = 0;
+int SymbolTable::switchNum = 0;
 bool SymbolTable::needReturn = false;
 bool SymbolTable::hasReturn = false;
 Type * SymbolTable::needReturnType = NULL;
@@ -24,19 +24,19 @@ void SymbolTable::pop(){
 void SymbolTable::insert(Symbol &sym){
     //calls insert of Scope table
     if(!SymbolTable::tables.empty())
-    	SymbolTable::tables.back().insert(sym);
+    	SymbolTable::tables.back()->insert(sym);
 }
 
 void SymbolTable::remove(Symbol &sym){
-    if (!SymbolTable::tables.empty() && !SymbolTable::tables.back()->symbols.empty())
-        SymbolTable::tables.back().remove(sym);
+    if (!SymbolTable::tables.empty() /*&& !SymbolTable::tables.back()->symbols.empty()*/)
+        SymbolTable::tables.back()->remove(sym);
 }
 
 Symbol* SymbolTable::find(const char *name){
     Symbol *res_sym;
-    for (std::vector<ScopedTable*>::iterator it = SymbolTable::tables.rbegin();
+    for (std::vector<ScopedTable*>::reverse_iterator it = SymbolTable::tables.rbegin();
         it != SymbolTable::tables.rend(); ++it){
-        res_sym = (*it).find(name);
+        res_sym = (*it)->find(name);
         if (res_sym != NULL) return res_sym;
     }
     return NULL;
@@ -44,7 +44,7 @@ Symbol* SymbolTable::find(const char *name){
 
 Symbol* SymbolTable::findInCurrScope(const char *name){
     if (!SymbolTable::tables.empty()){
-        return SymbolTable::tables.back().find(name);
+        return SymbolTable::tables.back()->find(name);
     }
     return NULL;
 }
@@ -55,8 +55,9 @@ Symbol* SymbolTable::findInCurrScope(const char *name){
 ScopedTable::ScopedTable(){}
 
 void ScopedTable::insert(Symbol &sym){
-    std::pair<std::map<char *,Symbol,lessStr>::iterator,bool> p;
-    p = ScopedTable::symbols.insert(std::pair<char *,Symbol,lessStr>(sym.name,sym));
+    std::pair<SymbolIterator,bool> p;
+
+    p = ScopedTable::symbols.insert(SymMap::value_type(sym.name, sym));
     if (p.second == false){
         p.first->second = sym;
     }
@@ -67,7 +68,8 @@ void ScopedTable::remove(Symbol &sym){
 }
 
 Symbol* ScopedTable::find(const char *name){
-    std::map<char *,Symbol,lessStr>::iterator it;
+    //std::map<char *,Symbol,lessStr>::iterator it;
+    SymbolIterator it;
     it = ScopedTable::symbols.find(name);
     if (it != ScopedTable::symbols.end())
         return &(it->second);

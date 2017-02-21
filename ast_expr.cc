@@ -47,10 +47,10 @@ void VarExpr::Check(){
     char *name = this->GetIdentifier()->GetName();
     Symbol * symres = Node::symtable->find(name);
     if (symres == NULL){
-        ReportError::IdentifierNotDeclared(this->GetIdentifier(),reasonT::LookingForVariable);
+        ReportError::IdentifierNotDeclared(this->GetIdentifier(),/*reasonT*/::LookingForVariable);
         this->type = Type::errorType;
     }else{
-        VarDecl * vardecl = dynamic_cast<VarDecl*>(symres->decl)
+        VarDecl * vardecl = dynamic_cast<VarDecl*>(symres->decl);
         if (vardecl){
             this->type = vardecl->GetType();
         }else{
@@ -141,11 +141,11 @@ void ArithmeticExpr::Check(){
             this->type = Type::errorType;
         }else if (this->op->IsOp(And) || this->op->IsOp(Or)){
             //checking whether the operator is logical
-            if(!ltype->isBool() || !rtype->isBool()){
+            if(!ltype->IsBool() || !rtype->IsBool()){
                 ReportError::IncompatibleOperands(this->op,ltype,rtype);
                 this->type = Type::errorType;
             }else{
-                this->type = Type::BoolConstant;
+                this->type = Type::boolType;
             }
         }else if (!(ltype->IsNumeric() || ltype->IsVector() || ltype->IsMatrix())){
             ReportError::IncompatibleOperands(this->op,ltype,rtype);
@@ -182,7 +182,7 @@ void RelationalExpr::Check(){
     }else if (ltype->IsError() || rtype->IsError()){
         this->type = Type::errorType;
     }else{
-        this->type = Type::BoolConstant;
+        this->type = Type::boolType;
     }
 }
 
@@ -199,7 +199,7 @@ void EqualityExpr::Check(){
     }else if (ltype->IsError() || rtype->IsError()){
         this->type = Type::errorType;
     }else{
-        this->type = Type::BoolConstant;
+        this->type = Type::boolType;
     }
 }
 
@@ -280,7 +280,7 @@ void ArrayAccess::Check(){
         VarExpr * varExpr = dynamic_cast<VarExpr *>(this->base);
         //a line of segmentation: if base is not a varExpr then core dump
         //so add a safe check
-        if(VarExpr)
+        if(varExpr)
             ReportError::NotAnArray(varExpr->GetIdentifier());
         this->type = Type::errorType;
     }
@@ -313,7 +313,7 @@ void FieldAccess::Check(){
     }
 
     if(!baseType->IsVector()){
-        ReportError::InaccessibleSwizzle(this->field,this->baseType);
+        ReportError::InaccessibleSwizzle(this->field,this->base);
         this->type = Type::errorType;
         return;
     }
@@ -323,10 +323,10 @@ void FieldAccess::Check(){
     std::string fieldStr(fieldName);
     for(int i = 0; i < 3; i++){
         if(baseType->IsEquivalentTo(typeArr[i])){
-            for(unsigned int i = 0; i<fieldName.length(); i++){
+            for(unsigned int i = 0; i<fieldStr.length(); i++){
                 if(fieldName[i] != 'x' || fieldName[i] != 'y' || fieldName[i] != 'z' || fieldName[i] != 'w'){
                     ReportError::InvalidSwizzle(this->field, this->base);
-                    this->type = errorType;
+                    this->type = Type::errorType;
                     return;
                 }
                 //case for vec2Type swizzle out of bound
@@ -344,17 +344,17 @@ void FieldAccess::Check(){
             }
         }
     }
-    if(fieldName.length() > 4){
+    if(fieldStr.length() > 4){
         ReportError::OversizedVector(this->field, this->base);
         this->type = Type::errorType;
         return;
     }
 
-    if(fieldName.length() == 1){
+    if(fieldStr.length() == 1){
         this->type = Type::floatType;
-    }else if(fieldName.length() == 2){
+    }else if(fieldStr.length() == 2){
         this->type = Type::vec2Type;
-    }else if(fieldName.length() == 3){
+    }else if(fieldStr.length() == 3){
         this->type = Type::vec3Type;
     }else{
         this->type = Type::vec4Type;
@@ -383,15 +383,15 @@ void Call::Check(){
     Symbol * funcSym = Node::symtable->find(this->field->GetName());
     //if we cannot find that identifier in symbol table
     if(funcSym == NULL){
-        ReportError::IdentifierNotDeclared(this->field, reasonT::LookingForFunction);
+        ReportError::IdentifierNotDeclared(this->field, /*reasonT::*/LookingForFunction);
         this->type = Type::errorType;
         return;
     }
 
-    FnDecl * fnDecl = dynamic_cast<FnDecl *> funcSym->decl;
+    FnDecl * fnDecl = dynamic_cast<FnDecl *> (funcSym->decl);
     //not sure we can directly do assertion like this or not
     //if found in symbol table, but is not declared as a function
-    if(funcSym->kind == EntryKind::E_VarDecl || fnDecl == NULL){
+    if(funcSym->kind == E_VarDecl || fnDecl == NULL){
         ReportError::NotAFunction(this->field);
         this->type = Type::errorType;
         return;
@@ -399,8 +399,8 @@ void Call::Check(){
 
     //get the formals declared
     List<VarDecl*> * expectedFormals = fnDecl->GetFormals();
-    int expectNum = expectedFormals->size();
-    int actualNum = this->actuals->size();
+    int expectNum = expectedFormals->NumElements();
+    int actualNum = this->actuals->NumElements();
     if(actualNum < expectNum){
         ReportError::LessFormals(this->field, expectNum, actualNum);
         this->type = Type::errorType;
