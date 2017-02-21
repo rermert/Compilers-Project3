@@ -1,3 +1,12 @@
+
+#include "symtable.h"
+#include "ast_type.h"
+
+int SymbolTable::loopNum = 0;
+int SymbolTable::swtichNum = 0;
+bool SymbolTable::needReturn = false;
+Type * SymbolTable::needReturnType = NULL;
+
 SymbolTable::SymbolTable(){
     SymbolTable::push();
 }

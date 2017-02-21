@@ -18,6 +18,7 @@
 #include <iostream>
 #include <string.h>
 #include "errors.h"
+#include "ast_type.h"
 
 using namespace std;
 
@@ -76,6 +77,11 @@ class SymbolTable {
     void remove(Symbol &sym);
     Symbol *find(const char *name);
     Symbol *findInCurrScope(const char *name);
+
+    static int loopNum;
+    static int switchNum;
+    static bool needReturn;
+    static Type * needReturnType;
 };
 
 class MyStack {
