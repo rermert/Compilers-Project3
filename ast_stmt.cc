@@ -212,8 +212,12 @@ void ReturnStmt::Check(){
     Node::symtable->hasReturn = true;
 
     //case 1: return nothing but function requres something
-    if(expr == NULL && Node::symtable->needReturn == true)
+    if(expr == NULL && Node::symtable->needReturn == true){
         ReportError::ReturnMismatch(this, Type::voidType, Node::symtable->needReturnType);
+        return;
+    }else if(expr == NULL){//prevent segfault: if expr is NULL, do not continue to check
+        return;
+    }
     
     expr->Check();
     Type * returnType = expr->GetType();
